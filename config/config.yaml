@@ -10,10 +10,9 @@ youtube:
   channels:
     - SANYKorea_1989
 
-
 output:
   raw_path: data/raw
-
+  csv_path: data/processed
 
 logging:
   level: INFO
