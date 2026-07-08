@@ -1,19 +1,23 @@
-import json
 from pathlib import Path
+
 import pandas as pd
 
-def normalize_data(data):
-    rows = []
-    for item in data:
-        row = item.copy()
-        if "raw_data" in row:
-            row["raw_data"] = json.dumps(row["raw_data"], ensure_ascii=False)
-        rows.append(row)
-    return rows
 
-def save_csv(data, filename):
-    path = Path(filename)
+def save_csv(data, output_file):
+    path = Path(output_file)
     path.parent.mkdir(parents=True, exist_ok=True)
-    dataframe = pd.DataFrame(normalize_data(data))
-    dataframe.to_csv(path, index=False, encoding="utf-8-sig")
-    return path
+
+    dataframe = pd.DataFrame(data)
+
+    if "platform" not in dataframe.columns:
+        raise ValueError("Missing platform column")
+
+    dataframe["platform"] = dataframe["platform"].fillna("").str.lower().str.strip()
+
+    dataframe.to_csv(
+        path,
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    return len(dataframe)

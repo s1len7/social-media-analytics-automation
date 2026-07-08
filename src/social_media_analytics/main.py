@@ -2,12 +2,24 @@ import time
 from pathlib import Path
 import logging
 
+from social_media_analytics.utils import logger
 from social_media_analytics.utils.config import load_config
 from social_media_analytics.utils.logger import setup_logger
+
 from social_media_analytics.collectors.instagram import collect_instagram_posts
 from social_media_analytics.collectors.youtube import collect_youtube_videos
+
 from social_media_analytics.storage.csv_writer import save_csv
 from social_media_analytics.storage.json_writer import save_json
+
+from social_media_analytics.analytics.loader import load_csv_files
+from social_media_analytics.analytics.loader import normalize_timestamp
+from social_media_analytics.reports.summary import create_summary
+
+from social_media_analytics.reports.charts import save_monthly_chart
+from social_media_analytics.reports.charts import save_weekly_chart
+from social_media_analytics.reports.charts import save_yearly_chart
+from social_media_analytics.reports.excel import save_excel
 
 def main():
     start_time = time.perf_counter()
@@ -49,6 +61,29 @@ def main():
         save_csv(youtube_videos, output_csv / "youtube_videos.csv")
         save_elapsed = time.perf_counter() - save_start
         logger.info(f"YouTube saved: {len(youtube_videos)}, save_time={save_elapsed:.4f}s")
+
+    
+    analysis_start = time.perf_counter()
+
+    analytics_data = load_csv_files(output_csv)
+    analytics_data = normalize_timestamp(analytics_data)
+    logger.info(f"Platform counts: {analytics_data['platform'].value_counts().to_dict()}")
+
+    summary = create_summary(analytics_data)
+
+    report_path = output_raw / "social_media_report.xlsx"
+    save_excel(summary, report_path)
+
+    chart_path = output_raw / "charts"
+    chart_path.mkdir(parents=True, exist_ok=True)
+
+    save_yearly_chart(summary["yearly"], chart_path / "yearly.png")
+    save_monthly_chart(summary["monthly"], chart_path / "monthly.png")
+    save_weekly_chart(summary["weekly"], chart_path / "weekly.png")
+
+    analysis_elapsed = time.perf_counter() - analysis_start
+    logger.info(f"Analytics completed: rows={len(analytics_data)}, time={analysis_elapsed:.2f}s")
+
 
     elapsed = time.perf_counter() - start_time
     logger.info(f"Completed. Total elapsed={elapsed:.2f}s")
