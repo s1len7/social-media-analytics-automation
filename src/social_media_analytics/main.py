@@ -28,7 +28,7 @@ def main():
     logger.info("Social media analytics started")
 
     output_raw = Path(config["output"]["raw_path"])
-    output_csv = Path(config["output"]["csv_path"])
+    output_csv = Path(config["output"]["processed_path"])
 
     instagram_posts = []
 
@@ -41,8 +41,8 @@ def main():
 
     if instagram_posts:
         save_start = time.perf_counter()
-        save_json(instagram_posts, output_raw / "instagram_raw.json")
-        save_csv(instagram_posts, output_csv / "instagram_posts.csv")
+        # save_json(instagram_posts, output_raw / "instagram_raw.json")
+        save_csv(instagram_posts, output_raw / "instagram_posts.csv")
         save_elapsed = time.perf_counter() - save_start
         logger.info(f"Instagram saved: {len(instagram_posts)}, save_time={save_elapsed:.4f}s")
 
@@ -57,24 +57,23 @@ def main():
 
     if youtube_videos:
         save_start = time.perf_counter()
-        save_json(youtube_videos, output_raw / "youtube_raw.json")
-        save_csv(youtube_videos, output_csv / "youtube_videos.csv")
+        # save_json(youtube_videos, output_raw / "youtube_raw.json")
+        save_csv(youtube_videos, output_raw / "youtube_videos.csv")
         save_elapsed = time.perf_counter() - save_start
         logger.info(f"YouTube saved: {len(youtube_videos)}, save_time={save_elapsed:.4f}s")
 
     
     analysis_start = time.perf_counter()
 
-    analytics_data = load_csv_files(output_csv)
+    analytics_data = load_csv_files(output_raw)
     analytics_data = normalize_timestamp(analytics_data)
     logger.info(f"Platform counts: {analytics_data['platform'].value_counts().to_dict()}")
+    save_csv(analytics_data, output_csv / "analytics_data.csv")
 
     summary = create_summary(analytics_data)
+    save_excel(summary, output_csv / "social_media_report.xlsx")
 
-    report_path = output_raw / "social_media_report.xlsx"
-    save_excel(summary, report_path)
-
-    chart_path = output_raw / "charts"
+    chart_path = output_csv / "charts"
     chart_path.mkdir(parents=True, exist_ok=True)
 
     save_yearly_chart(summary["yearly"], chart_path / "yearly.png")

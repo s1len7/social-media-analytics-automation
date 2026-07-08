@@ -21,7 +21,7 @@ def create_bar_chart(
         hue="platform",
     )
 
-    plt.xticks(rotation=45)
+    plt.xticks(rotation=90)
     plt.tight_layout()
 
     plt.savefig(output_path)

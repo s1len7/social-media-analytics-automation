@@ -50,11 +50,16 @@ def monthly_count(dataframe: pd.DataFrame) -> pd.DataFrame:
 def weekly_count(dataframe: pd.DataFrame) -> pd.DataFrame:
     dataframe = dataframe.copy()
 
-    dataframe["week"] = (
+    iso_calendar = (
         dataframe["timestamp"]
         .dt.tz_localize(None)
-        .dt.to_period("W")
-        .astype(str)
+        .dt.isocalendar()
+    )
+
+    dataframe["week"] = (
+        iso_calendar["year"].astype(str)
+        + "_WW"
+        + iso_calendar["week"].astype(str).str.zfill(2)
     )
 
     result = (

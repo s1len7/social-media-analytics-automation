@@ -13,7 +13,8 @@ youtube:
 
 output:
   raw_path: data/raw
-  csv_path: data/processed
+  # csv_path: data/processed
+  processed_path: data/processed
 
 logging:
   level: INFO

@@ -24,7 +24,7 @@ def save_excel(summary, output_file):
             worksheet.freeze_panes = "A2"
             for cell in worksheet[1]:
                 cell.font = Font(bold=True)
-                cell.fill = PatternFill("solid", fgColor="D9EAF7")
+                cell.fill = PatternFill("solid", fgColor="D9D9D9")
             auto_width(worksheet)
 
     return path

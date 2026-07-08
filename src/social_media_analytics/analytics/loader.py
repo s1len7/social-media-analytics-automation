@@ -10,96 +10,85 @@ def load_csv_files(data_path: Path) -> pd.DataFrame:
     dataframes = []
 
     for csv_file in data_path.glob("*.csv"):
-        dataframe = pd.read_csv(csv_file)
+        df = pd.read_csv(csv_file)
+        logger.info(f"Loaded CSV: {csv_file.name}, rows={len(df)}")
 
-        logger.info(
-            f"Loaded CSV: {csv_file.name}, rows={len(dataframe)}"
-        )
+        if "platform" in df.columns:
+            platform_values = df["platform"].value_counts().to_dict()
+            logger.info(f"Platform values: {csv_file.name}, {platform_values}")
 
-        if "platform" in dataframe.columns:
-            logger.info(
-                f"Platform values: {csv_file.name}, "
-                f"{dataframe['platform'].value_counts().to_dict()}"
-            )
+        dataframes.append(df)
 
-        dataframes.append(dataframe)
+    if not dataframes:
+        logger.warning(f"No CSV files found: {data_path}")
+        return pd.DataFrame()
 
-    dataframe = pd.concat(
+    df = pd.concat(
         dataframes,
         ignore_index=True,
         sort=False,
     )
 
-    logger.info(
-        f"Combined platform values: "
-        f"{dataframe['platform'].value_counts().to_dict()}"
-    )
+    if "platform" in df.columns:
+        platform_values = df["platform"].value_counts().to_dict()
+        logger.info(f"Combined platform values: {platform_values}")
 
-    return dataframe
+    return df
 
 
-def normalize_timestamp(dataframe: pd.DataFrame) -> pd.DataFrame:
-    dataframe = dataframe.copy()
+def normalize_timestamp(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
 
     timestamp = pd.Series(
         pd.NaT,
-        index=dataframe.index,
+        index=df.index,
         dtype="datetime64[ns, UTC]",
     )
 
-    instagram_mask = dataframe["platform"] == "instagram"
-    youtube_mask = dataframe["platform"] == "youtube"
+    instagram_mask = df["platform"] == "instagram"
+    youtube_mask = df["platform"] == "youtube"
 
     if instagram_mask.any():
         timestamp.loc[instagram_mask] = pd.to_datetime(
-            dataframe.loc[
-                instagram_mask,
-                "timestamp",
-            ],
+            df.loc[instagram_mask, "timestamp"],
             utc=True,
             errors="coerce",
         )
 
     if youtube_mask.any():
         timestamp.loc[youtube_mask] = pd.to_datetime(
-            dataframe.loc[
-                youtube_mask,
-                "published_at",
-            ],
+            df.loc[youtube_mask, "published_at"],
             utc=True,
             errors="coerce",
         )
 
-    dataframe["timestamp"] = timestamp
+    df["timestamp"] = timestamp
 
     parse_result = (
-        dataframe.groupby("platform")["timestamp"]
+        df.groupby("platform")["timestamp"]
         .count()
         .to_dict()
     )
 
-    logger.info(
-        f"Timestamp parse result: {parse_result}"
-    )
+    logger.info(f"Timestamp parse result: {parse_result}")
 
-    before = len(dataframe)
+    before_count = len(df)
 
-    dataframe = dataframe.dropna(
+    df = df.dropna(
         subset=["timestamp"],
     ).reset_index(drop=True)
 
-    after = len(dataframe)
+    after_count = len(df)
 
     platform_result = (
-        dataframe.groupby("platform")
+        df.groupby("platform")
         .size()
         .to_dict()
     )
 
     logger.info(
-        f"Timestamp normalized: "
-        f"before={before}, after={after}, "
-        f"platform={platform_result}"
+        f"Timestamp normalized: before={before_count}, "
+        f"after={after_count}, platform={platform_result}"
     )
 
-    return dataframe
+    return df
