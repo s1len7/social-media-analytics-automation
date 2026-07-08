@@ -15,5 +15,5 @@ Report month: {{ report_month }}
 ## Files
 
 - social_media_report.xlsx
-- instagram_posts.csv
-- youtube_videos.csv
+<!-- - instagram_posts.csv
+- youtube_videos.csv -->
