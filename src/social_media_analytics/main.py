@@ -21,6 +21,8 @@ from social_media_analytics.reports.charts import save_weekly_chart
 from social_media_analytics.reports.charts import save_yearly_chart
 from social_media_analytics.reports.excel import save_excel
 
+from social_media_analytics.notification.email import send_email
+
 def main():
     start_time = time.perf_counter()
     config = load_config()
@@ -83,6 +85,29 @@ def main():
     analysis_elapsed = time.perf_counter() - analysis_start
     logger.info(f"Analytics completed: rows={len(analytics_data)}, time={analysis_elapsed:.2f}s")
 
+    email_start = time.perf_counter()
+
+    send_email(
+        subject="[Social Media Analytics] Monthly Report",
+        body=(
+            "Social media analytics report is completed.\n\n"
+            "Attached files:\n"
+            "- social_media_report.xlsx\n"
+            "- instagram_posts.csv\n"
+            "- youtube_videos.csv"
+        ),
+        attachments=[
+            output_csv / "social_media_report.xlsx",
+            output_raw / "instagram_posts.csv",
+            output_raw / "youtube_videos.csv",
+        ],
+    )
+
+    email_elapsed = time.perf_counter() - email_start
+
+    logger.info(
+        f"Email sent, time={email_elapsed:.2f}s"
+    )
 
     elapsed = time.perf_counter() - start_time
     logger.info(f"Completed. Total elapsed={elapsed:.2f}s")
