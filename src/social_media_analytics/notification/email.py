@@ -56,8 +56,13 @@ def create_mail_summary(summary):
 def send_email(config, body, attachments):
     smtp_server = config["smtp_server"]
     smtp_port = config["smtp_port"]
-    recipients = config["recipients"]
-
+    recipients = [
+        email.strip()
+        for email in os.getenv("MAIL_RECIPIENTS", "",).split(",")
+        if email.strip()
+    ]
+    if not recipients:
+        raise ValueError("MAIL_RECIPIENTS is missing")
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
 
