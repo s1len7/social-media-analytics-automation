@@ -1,0 +1,25 @@
+[project]
+name = "social-media-analytics-automation"
+version = "0.1.0"
+description = "Automated social media content analytics and reporting system for Instagram and YouTube. Collects public posts, generates statistics, charts, and scheduled email reports."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-api-python-client>=2.198.0",
+    "matplotlib>=3.11.0",
+    "openpyxl>=3.1.5",
+    "pandas>=3.0.3",
+    "python-dotenv>=1.2.2",
+    "pyyaml>=6.0.3",
+    "requests>=2.34.2",
+]
+
+[project.scripts]
+social-analytics = "social_media_analytics.main:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

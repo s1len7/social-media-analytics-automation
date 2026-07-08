@@ -1,0 +1,19 @@
+instagram:
+  accounts:
+    # - instagram
+    - sanykorea
+
+apify:
+  api_token: ${APIFY_API_TOKEN}
+
+youtube:
+  channels:
+    - SANYKorea_1989
+
+
+output:
+  raw_path: data/raw
+
+
+logging:
+  level: INFO
