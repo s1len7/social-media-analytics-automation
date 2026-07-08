@@ -38,7 +38,6 @@ def resolve_channel_id(youtube, channel_handle):
 def collect_youtube_videos(channel_handle):
     start_time = time.perf_counter()
     youtube = get_youtube_client()
-
     channel_id = resolve_channel_id(youtube, channel_handle)
 
     logger.info(f"YouTube collection started: {channel_id}")
@@ -50,65 +49,91 @@ def collect_youtube_videos(channel_handle):
 
     uploads_playlist_id = channel_response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
-    videos = []
+    video_ids = []
     next_page_token = None
 
     while True:
         response = youtube.playlistItems().list(
-            part="snippet,contentDetails",
+            part="contentDetails",
             playlistId=uploads_playlist_id,
             maxResults=50,
             pageToken=next_page_token
         ).execute()
 
         for item in response.get("items", []):
-            video_id = item["contentDetails"]["videoId"]
-            videos.append({
-                "platform": "youtube",
-                "channel_id": channel_id,
-                "video_id": video_id,
-                "title": item["snippet"]["title"],
-                "description": item["snippet"]["description"],
-                "published_at": item["snippet"]["publishedAt"],
-                "url": f"https://www.youtube.com/watch?v={video_id}",
-                "raw_data": item
-            })
+            video_ids.append(item["contentDetails"]["videoId"])
 
         next_page_token = response.get("nextPageToken")
 
         if not next_page_token:
             break
 
-    logger.info(f"YouTube metadata collected: {len(videos)}")
+    logger.info(f"YouTube video ids collected: {len(video_ids)}")
 
-    statistic_start = time.perf_counter()
-
-    video_ids = [video["video_id"] for video in videos]
-    statistics = {}
+    videos = []
+    detail_start = time.perf_counter()
 
     for index in range(0, len(video_ids), 50):
         batch_ids = video_ids[index:index + 50]
 
         response = youtube.videos().list(
-            part="statistics,contentDetails",
+            part="snippet,statistics,contentDetails,status,topicDetails,recordingDetails,liveStreamingDetails",
             id=",".join(batch_ids)
         ).execute()
 
         for item in response.get("items", []):
-            statistics[item["id"]] = {
-                "view_count": item["statistics"].get("viewCount"),
-                "like_count": item["statistics"].get("likeCount"),
-                "comment_count": item["statistics"].get("commentCount"),
-                "duration": item["contentDetails"].get("duration")
-            }
+            snippet = item.get("snippet", {})
+            statistics = item.get("statistics", {})
+            content_details = item.get("contentDetails", {})
+            status = item.get("status", {})
+            topic_details = item.get("topicDetails", {})
+            recording_details = item.get("recordingDetails", {})
+            live_details = item.get("liveStreamingDetails", {})
 
-    statistic_elapsed = time.perf_counter() - statistic_start
-    logger.info(f"YouTube statistics collected: {statistic_elapsed:.2f}s")
+            videos.append({
+                "platform": "youtube",
+                "channel_id": item.get("snippet", {}).get("channelId"),
+                "channel_title": snippet.get("channelTitle"),
+                "video_id": item.get("id"),
+                "title": snippet.get("title"),
+                "description": snippet.get("description"),
+                "published_at": snippet.get("publishedAt"),
+                "category_id": snippet.get("categoryId"),
+                "tags": snippet.get("tags"),
+                "thumbnail_default": snippet.get("thumbnails", {}).get("default", {}).get("url"),
+                "thumbnail_medium": snippet.get("thumbnails", {}).get("medium", {}).get("url"),
+                "thumbnail_high": snippet.get("thumbnails", {}).get("high", {}).get("url"),
+                "default_language": snippet.get("defaultLanguage"),
+                "default_audio_language": snippet.get("defaultAudioLanguage"),
+                "view_count": statistics.get("viewCount"),
+                "like_count": statistics.get("likeCount"),
+                "comment_count": statistics.get("commentCount"),
+                "favorite_count": statistics.get("favoriteCount"),
+                "duration": content_details.get("duration"),
+                "dimension": content_details.get("dimension"),
+                "definition": content_details.get("definition"),
+                "caption": content_details.get("caption"),
+                "licensed_content": content_details.get("licensedContent"),
+                "projection": content_details.get("projection"),
+                "upload_status": status.get("uploadStatus"),
+                "privacy_status": status.get("privacyStatus"),
+                "license": status.get("license"),
+                "embeddable": status.get("embeddable"),
+                "public_stats_viewable": status.get("publicStatsViewable"),
+                "made_for_kids": status.get("madeForKids"),
+                "topic_categories": topic_details.get("topicCategories"),
+                "recording_date": recording_details.get("recordingDate"),
+                "location": recording_details.get("location"),
+                "scheduled_start_time": live_details.get("scheduledStartTime"),
+                "actual_start_time": live_details.get("actualStartTime"),
+                "actual_end_time": live_details.get("actualEndTime"),
+                "concurrent_viewers": live_details.get("concurrentViewers"),
+                "url": f"https://www.youtube.com/watch?v={item.get('id')}",
+                "raw_data": item
+            })
 
-    for video in videos:
-        video.update(
-            statistics.get(video["video_id"], {})
-        )
+    detail_elapsed = time.perf_counter() - detail_start
+    logger.info(f"YouTube video details collected: {detail_elapsed:.2f}s")
 
     elapsed = time.perf_counter() - start_time
     logger.info(f"YouTube collection completed: {channel_handle}, count={len(videos)}, time={elapsed:.2f}s")
