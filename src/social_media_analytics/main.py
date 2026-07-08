@@ -2,32 +2,52 @@ import logging
 import time
 from pathlib import Path
 
+from social_media_analytics.utils.logger import setup_logger
+
+from social_media_analytics.utils.config import load_config
+
 from social_media_analytics.analytics.loader import load_csv_files
 from social_media_analytics.analytics.loader import normalize_timestamp
 from social_media_analytics.collectors.instagram import collect_instagram_posts
 from social_media_analytics.collectors.youtube import collect_youtube_videos
-from social_media_analytics.notification.email import create_mail_summary
-from social_media_analytics.notification.email import send_email
+from social_media_analytics.storage.csv_writer import save_csv
+from social_media_analytics.reports.summary import create_summary
 from social_media_analytics.reports.charts import save_monthly_chart
 from social_media_analytics.reports.charts import save_weekly_chart
 from social_media_analytics.reports.charts import save_yearly_chart
 from social_media_analytics.reports.excel import save_excel
-from social_media_analytics.reports.summary import create_summary
-from social_media_analytics.storage.csv_writer import save_csv
-from social_media_analytics.utils.config import load_config
-from social_media_analytics.utils.logger import setup_logger
+
+from social_media_analytics.notification.email import create_mail_summary
+from social_media_analytics.notification.email import send_email
+
+from social_media_analytics.utils.state import save_state
+from social_media_analytics.utils.state import should_run
+
 
 logger = logging.getLogger("social-media-analytics")
 
 
 def main():
     start_time = time.perf_counter()
+
     config = load_config()
     logger = setup_logger(config["logging"]["level"])
-    logger.info("Social media analytics started")
+
     output_raw = Path(config["output"]["raw_path"])
     output_processed = Path(config["output"]["processed_path"])
-    output_processed.mkdir(parents=True, exist_ok=True)
+
+    output_processed.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    state_file = output_processed / "state" / "state.json"
+
+    if not should_run(state_file):
+        logger.info("Monthly report already sent. Skip.")
+        return
+
+    logger.info("Social media analytics started")
 
     instagram_posts = []
 
@@ -70,7 +90,7 @@ def main():
     save_csv(analytics_data, output_raw / "analytics_data.csv")
 
     summary = create_summary(analytics_data)
-    logger.info(f"Monthly summary:\n{summary['monthly']}")
+    # logger.info(f"Monthly summary:\n{summary['monthly']}")
 
     report_path = output_processed / "social_media_report.xlsx"
     save_excel(summary, report_path)
@@ -102,6 +122,8 @@ def main():
         )
         email_elapsed = time.perf_counter() - email_start
         logger.info(f"Email completed: time={email_elapsed:.2f}s")
+        save_state(state_file)
+        logger.info("State saved")
     except Exception:
         logger.exception("Email sending failed")
 
