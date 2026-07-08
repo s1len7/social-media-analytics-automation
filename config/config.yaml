@@ -7,8 +7,9 @@ apify:
   api_token: ${APIFY_API_TOKEN}
 
 youtube:
-  channels:
-    - SANYKorea_1989
+  api_key: ${YOUTUBE_API_KEY}
+  handles:
+    - "@SANYKorea_1989"
 
 output:
   raw_path: data/raw
