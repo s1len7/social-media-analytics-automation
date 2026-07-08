@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def load_config(config_path="config/config.yaml"):
     path = Path(config_path)
     if not path.exists():

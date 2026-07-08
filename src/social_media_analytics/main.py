@@ -61,9 +61,7 @@ def main():
         save_start = time.perf_counter()
         save_csv(instagram_posts, output_data / "instagram_posts.csv")
         save_elapsed = time.perf_counter() - save_start
-        logger.info(
-            f"Instagram saved: {len(instagram_posts)}, save_time={save_elapsed:.4f}s"
-        )
+        logger.info(f"Instagram saved: {len(instagram_posts)}, save_time={save_elapsed:.4f}s")
 
     youtube_videos = []
 
@@ -78,9 +76,7 @@ def main():
         save_start = time.perf_counter()
         save_csv(youtube_videos, output_data / "youtube_videos.csv")
         save_elapsed = time.perf_counter() - save_start
-        logger.info(
-            f"YouTube saved: {len(youtube_videos)}, save_time={save_elapsed:.4f}s"
-        )
+        logger.info(f"YouTube saved: {len(youtube_videos)}, save_time={save_elapsed:.4f}s")
 
     analysis_start = time.perf_counter()
 
@@ -106,9 +102,7 @@ def main():
     save_weekly_chart(summary["weekly"], chart_path / "weekly.png")
 
     analysis_elapsed = time.perf_counter() - analysis_start
-    logger.info(
-        f"Analytics completed: rows={len(analytics_data)}, time={analysis_elapsed:.2f}s"
-    )
+    logger.info(f"Analytics completed: rows={len(analytics_data)}, time={analysis_elapsed:.2f}s")
 
     mail_subject, mail_body = create_mail_summary(summary)
 
