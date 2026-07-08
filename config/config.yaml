@@ -1,10 +1,12 @@
-instagram:
-  accounts:
-    # - instagram
-    - sanykorea
+logging:
+  level: INFO
 
 apify:
   api_token: ${APIFY_API_TOKEN}
+
+instagram:
+  accounts:
+    - sanykorea
 
 youtube:
   api_key: ${YOUTUBE_API_KEY}
@@ -16,5 +18,10 @@ output:
   # csv_path: data/processed
   processed_path: data/processed
 
-logging:
-  level: INFO
+mail:
+  smtp_server: smtp.gmail.com
+  smtp_port: 587
+  subject: "[Social Media Analytics] Monthly Report"
+  recipients:
+    - receiver1@example.com
+    - receiver2@example.com
