@@ -1,38 +1,97 @@
+import logging
 import os
 import smtplib
-from pathlib import Path
 from email.message import EmailMessage
+from pathlib import Path
 
+import markdown
 from dotenv import load_dotenv
+from jinja2 import Template
+
+logger = logging.getLogger("social-media-analytics")
 
 load_dotenv()
 
 
-def send_email(subject, body, attachments):
-    smtp_server = os.getenv("SMTP_SERVER")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+def create_mail_summary(summary):
+    template_path = (
+        Path(__file__).parent
+        / "templates"
+        / "monthly_report.md"
+    )
+
+    template = Template(
+        template_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    monthly = summary["monthly"]
+
+    latest = monthly.iloc[-1]
+
+    instagram_count = latest.get(
+        "instagram_count",
+        0,
+    )
+
+    youtube_count = latest.get(
+        "youtube_count",
+        0,
+    )
+
+    markdown_body = template.render(
+        report_month=str(latest["month"]),
+        instagram_count=instagram_count,
+        youtube_count=youtube_count,
+        total_count=(
+            instagram_count
+            + youtube_count
+        ),
+    )
+
+    return markdown_body
+
+
+def send_email(config, body, attachments):
+    smtp_server = config["smtp_server"]
+    smtp_port = config["smtp_port"]
+    recipients = config["recipients"]
+
     smtp_user = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
-    mail_to = os.getenv("MAIL_TO")
 
-    if not all(
-        [
-            smtp_server,
-            smtp_user,
-            smtp_password,
-            mail_to,
-        ]
-    ):
-        raise ValueError("SMTP configuration is missing")
+    if not smtp_user or not smtp_password:
+        raise ValueError("SMTP credentials are missing")
 
     message = EmailMessage()
-    message["Subject"] = subject
+
+    message["Subject"] = config["subject"]
     message["From"] = smtp_user
-    message["To"] = mail_to
+    message["To"] = ", ".join(recipients)
+
     message.set_content(body)
+
+    html_body = markdown.markdown(
+        body,
+        extensions=[
+            "tables",
+        ],
+    )
+
+    message.add_alternative(
+        html_body,
+        subtype="html",
+    )
 
     for attachment in attachments:
         file_path = Path(attachment)
+
+        if not file_path.exists():
+            logger.warning(
+                f"Attachment skipped: {file_path}"
+            )
+            continue
 
         with file_path.open("rb") as file:
             file_data = file.read()
@@ -44,6 +103,14 @@ def send_email(subject, body, attachments):
             filename=file_path.name,
         )
 
+        logger.info(
+            f"Attachment added: {file_path.name}"
+        )
+
+    logger.info(
+        f"SMTP connection started: {smtp_server}:{smtp_port}"
+    )
+
     with smtplib.SMTP(
         smtp_server,
         smtp_port,
@@ -54,3 +121,7 @@ def send_email(subject, body, attachments):
             smtp_password,
         )
         server.send_message(message)
+
+    logger.info(
+        f"Email sent: recipients={recipients}"
+    )

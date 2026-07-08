@@ -1,27 +1,25 @@
+import logging
 import time
 from pathlib import Path
-import logging
-
-from social_media_analytics.utils import logger
-from social_media_analytics.utils.config import load_config
-from social_media_analytics.utils.logger import setup_logger
-
-from social_media_analytics.collectors.instagram import collect_instagram_posts
-from social_media_analytics.collectors.youtube import collect_youtube_videos
-
-from social_media_analytics.storage.csv_writer import save_csv
-from social_media_analytics.storage.json_writer import save_json
 
 from social_media_analytics.analytics.loader import load_csv_files
 from social_media_analytics.analytics.loader import normalize_timestamp
-from social_media_analytics.reports.summary import create_summary
-
+from social_media_analytics.collectors.instagram import collect_instagram_posts
+from social_media_analytics.collectors.youtube import collect_youtube_videos
+from social_media_analytics.notification.email import send_email
 from social_media_analytics.reports.charts import save_monthly_chart
 from social_media_analytics.reports.charts import save_weekly_chart
 from social_media_analytics.reports.charts import save_yearly_chart
 from social_media_analytics.reports.excel import save_excel
-
+from social_media_analytics.reports.summary import create_summary
+from social_media_analytics.storage.csv_writer import save_csv
+from social_media_analytics.utils.config import load_config
+from social_media_analytics.utils.logger import setup_logger
+from social_media_analytics.notification.email import create_mail_summary
 from social_media_analytics.notification.email import send_email
+
+logger = logging.getLogger("social-media-analytics")
+
 
 def main():
     start_time = time.perf_counter()
@@ -30,7 +28,8 @@ def main():
     logger.info("Social media analytics started")
 
     output_raw = Path(config["output"]["raw_path"])
-    output_csv = Path(config["output"]["processed_path"])
+    output_processed = Path(config["output"]["processed_path"])
+    output_processed.mkdir(parents=True, exist_ok=True)
 
     instagram_posts = []
 
@@ -43,10 +42,15 @@ def main():
 
     if instagram_posts:
         save_start = time.perf_counter()
-        # save_json(instagram_posts, output_raw / "instagram_raw.json")
-        save_csv(instagram_posts, output_raw / "instagram_posts.csv")
+        save_csv(
+            instagram_posts,
+            output_raw / "instagram_posts.csv",
+        )
         save_elapsed = time.perf_counter() - save_start
-        logger.info(f"Instagram saved: {len(instagram_posts)}, save_time={save_elapsed:.4f}s")
+        logger.info(
+            f"Instagram saved: {len(instagram_posts)}, "
+            f"save_time={save_elapsed:.4f}s"
+        )
 
     youtube_videos = []
 
@@ -59,58 +63,94 @@ def main():
 
     if youtube_videos:
         save_start = time.perf_counter()
-        # save_json(youtube_videos, output_raw / "youtube_raw.json")
-        save_csv(youtube_videos, output_raw / "youtube_videos.csv")
+        save_csv(
+            youtube_videos,
+            output_raw / "youtube_videos.csv",
+        )
         save_elapsed = time.perf_counter() - save_start
-        logger.info(f"YouTube saved: {len(youtube_videos)}, save_time={save_elapsed:.4f}s")
+        logger.info(
+            f"YouTube saved: {len(youtube_videos)}, "
+            f"save_time={save_elapsed:.4f}s"
+        )
 
-    
     analysis_start = time.perf_counter()
 
     analytics_data = load_csv_files(output_raw)
     analytics_data = normalize_timestamp(analytics_data)
-    logger.info(f"Platform counts: {analytics_data['platform'].value_counts().to_dict()}")
-    save_csv(analytics_data, output_csv / "analytics_data.csv")
+
+    platform_counts = (
+        analytics_data["platform"]
+        .value_counts()
+        .to_dict()
+    )
+
+    logger.info(f"Platform counts: {platform_counts}")
+
+    save_csv(
+        analytics_data,
+        output_raw / "analytics_data.csv",
+    )
 
     summary = create_summary(analytics_data)
-    save_excel(summary, output_csv / "social_media_report.xlsx")
 
-    chart_path = output_csv / "charts"
-    chart_path.mkdir(parents=True, exist_ok=True)
+    report_path = output_processed / "social_media_report.xlsx"
 
-    save_yearly_chart(summary["yearly"], chart_path / "yearly.png")
-    save_monthly_chart(summary["monthly"], chart_path / "monthly.png")
-    save_weekly_chart(summary["weekly"], chart_path / "weekly.png")
+    save_excel(
+        summary,
+        report_path,
+    )
+
+    chart_path = output_processed / "charts"
+    chart_path.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    save_yearly_chart(
+        summary["yearly"],
+        chart_path / "yearly.png",
+    )
+
+    save_monthly_chart(
+        summary["monthly"],
+        chart_path / "monthly.png",
+    )
+
+    save_weekly_chart(
+        summary["weekly"],
+        chart_path / "weekly.png",
+    )
 
     analysis_elapsed = time.perf_counter() - analysis_start
-    logger.info(f"Analytics completed: rows={len(analytics_data)}, time={analysis_elapsed:.2f}s")
+    logger.info(
+        f"Analytics completed: rows={len(analytics_data)}, "
+        f"time={analysis_elapsed:.2f}s"
+    )
+
+    mail_body = create_mail_summary(summary)
 
     email_start = time.perf_counter()
 
-    send_email(
-        subject="[Social Media Analytics] Monthly Report",
-        body=(
-            "Social media analytics report is completed.\n\n"
-            "Attached files:\n"
-            "- social_media_report.xlsx\n"
-            "- instagram_posts.csv\n"
-            "- youtube_videos.csv"
-        ),
-        attachments=[
-            output_csv / "social_media_report.xlsx",
-            output_raw / "instagram_posts.csv",
-            output_raw / "youtube_videos.csv",
-        ],
-    )
+    try:
+        send_email(
+            config=config["mail"],
+            body=mail_body,
+            attachments=[
+                report_path,
+                output_raw / "instagram_posts.csv",
+                output_raw / "youtube_videos.csv",
+            ],
+        )
 
-    email_elapsed = time.perf_counter() - email_start
+        email_elapsed = time.perf_counter() - email_start
+        logger.info(f"Email completed: time={email_elapsed:.2f}s")
 
-    logger.info(
-        f"Email sent, time={email_elapsed:.2f}s"
-    )
+    except Exception:
+        logger.exception("Email sending failed")
 
     elapsed = time.perf_counter() - start_time
     logger.info(f"Completed. Total elapsed={elapsed:.2f}s")
+
 
 if __name__ == "__main__":
     main()
