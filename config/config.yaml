@@ -22,6 +22,3 @@ mail:
   smtp_server: smtp.gmail.com
   smtp_port: 587
   subject: "[Social Media Analytics] Monthly Report"
-  recipients:
-    - receiver1@example.com
-    - receiver2@example.com
