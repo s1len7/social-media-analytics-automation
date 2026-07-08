@@ -24,10 +24,7 @@ def should_run(state_file):
         )
     )
 
-    return (
-        state.get("last_report_month")
-        != report_month
-    )
+    return state.get("last_report_month") != report_month
 
 
 def save_state(state_file):
@@ -37,8 +34,16 @@ def save_state(state_file):
     )
 
     state = {
-        "last_run_time": datetime.now().isoformat(timespec="seconds",),
+        "last_run_time": datetime.now().isoformat(
+            timespec="seconds",
+        ),
         "last_report_month": get_report_month(),
     }
 
-    state_file.write_text(json.dumps(state, indent=4,), encoding="utf-8",)
+    state_file.write_text(
+        json.dumps(
+            state,
+            indent=4,
+        ),
+        encoding="utf-8",
+    )

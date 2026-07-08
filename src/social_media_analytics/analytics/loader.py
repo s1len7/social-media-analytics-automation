@@ -64,11 +64,7 @@ def normalize_timestamp(df: pd.DataFrame) -> pd.DataFrame:
 
     df["timestamp"] = timestamp
 
-    parse_result = (
-        df.groupby("platform")["timestamp"]
-        .count()
-        .to_dict()
-    )
+    parse_result = df.groupby("platform")["timestamp"].count().to_dict()
 
     logger.info(f"Timestamp parse result: {parse_result}")
 
@@ -80,11 +76,7 @@ def normalize_timestamp(df: pd.DataFrame) -> pd.DataFrame:
 
     after_count = len(df)
 
-    platform_result = (
-        df.groupby("platform")
-        .size()
-        .to_dict()
-    )
+    platform_result = df.groupby("platform").size().to_dict()
 
     logger.info(
         f"Timestamp normalized: before={before_count}, "

@@ -14,10 +14,6 @@ def save_csv(data, output_file):
 
     dataframe["platform"] = dataframe["platform"].fillna("").str.lower().str.strip()
 
-    dataframe.to_csv(
-        path,
-        index=False,
-        encoding="utf-8-sig"
-    )
+    dataframe.to_csv(path, index=False, encoding="utf-8-sig")
 
     return len(dataframe)

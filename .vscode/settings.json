@@ -2,9 +2,12 @@
     "python.defaultInterpreterPath": ".venv/bin/python",
     "python.terminal.activateEnvironment": true,
 
+    "github.copilot.chat.commitMessageGeneration.enable": true,
     "github.copilot.chat.commitMessageGeneration.instructions": [
         { "text": "반드시 한국어로 작성하세요." },
         { "text": "커밋 유형(feat, fix, refactor 등)을 명시하고, 이모지를 포함하여 2~3줄로 작성해주세요." }
-    ]
-
+    ],
+    
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
 }

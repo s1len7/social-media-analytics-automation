@@ -32,14 +32,10 @@ def create_mail_summary(summary):
 
     report_month_str = f"{report_year}-{report_month:02d}"
 
-    target = monthly.loc[
-        monthly["month"] == report_month_str
-    ]
+    target = monthly.loc[monthly["month"] == report_month_str]
 
     if target.empty:
-        raise ValueError(
-            f"Previous month data not found: {report_month_str}"
-        )
+        raise ValueError(f"Previous month data not found: {report_month_str}")
 
     instagram = target.loc[
         target["platform"] == "instagram",
@@ -51,18 +47,11 @@ def create_mail_summary(summary):
         "count",
     ]
 
-    instagram_count = int(
-        instagram.iloc[0]
-    ) if not instagram.empty else 0
+    instagram_count = int(instagram.iloc[0]) if not instagram.empty else 0
 
-    youtube_count = int(
-        youtube.iloc[0]
-    ) if not youtube.empty else 0
+    youtube_count = int(youtube.iloc[0]) if not youtube.empty else 0
 
-    total_count = (
-        instagram_count
-        + youtube_count
-    )
+    total_count = instagram_count + youtube_count
 
     body = template.render(
         report_month=report_month_str,
@@ -71,10 +60,7 @@ def create_mail_summary(summary):
         total_count=total_count,
     )
 
-    subject = (
-        f"[Social Media Analytics] "
-        f"{report_month_str} Report"
-    )
+    subject = f"[Social Media Analytics] {report_month_str} Report"
 
     return subject, body
 
@@ -137,9 +123,7 @@ def send_email(config, subject, body, attachments):
 
         logger.info(f"Attachment added: {file_path.name}")
 
-    logger.info(
-        f"SMTP connection started: {smtp_server}:{smtp_port}"
-    )
+    logger.info(f"SMTP connection started: {smtp_server}:{smtp_port}")
 
     with smtplib.SMTP(
         smtp_server,
@@ -152,6 +136,4 @@ def send_email(config, subject, body, attachments):
         )
         server.send_message(message)
 
-    logger.info(
-        f"Email sent: recipients={recipients}"
-    )
+    logger.info(f"Email sent: recipients={recipients}")

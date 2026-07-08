@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+
 def save_json(data, filename):
     path = Path(filename)
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -14,11 +14,11 @@ youtube:
     - "@SANYKorea_1989"
 
 output:
-  raw_path: data/raw
+  # raw_path: data/raw
   # csv_path: data/processed
-  processed_path: data/processed
+  # processed_path: data/processed
+  data_path: data
 
 mail:
   smtp_server: smtp.gmail.com
   smtp_port: 587
-  subject: "[Social Media Analytics] Monthly Report"
