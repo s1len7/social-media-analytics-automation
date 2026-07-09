@@ -16,3 +16,9 @@ output:
 mail:
   smtp_server: smtp.gmail.com
   smtp_port: 587
+
+setup:
+  links:
+    apify: https://console.apify.com/account/integrations
+    youtube_api: https://console.cloud.google.com/apis/credentials
+    smtp_password: https://myaccount.google.com/apppasswords

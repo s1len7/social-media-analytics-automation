@@ -4,19 +4,25 @@ import platform
 import subprocess
 import tkinter as tk
 import webbrowser
-
 from tkinter import messagebox
 from tkinter import ttk
 
 from social_media_analytics.setup.config_io import ensure_app_directory
+from social_media_analytics.setup.config_io import load_env
+from social_media_analytics.setup.config_io import load_or_create_config
 from social_media_analytics.setup.config_io import save_config
 from social_media_analytics.setup.config_io import save_env
+
+from social_media_analytics.constants import LOG_LEVELS
 
 logger = logging.getLogger(__name__)
 
 
 class SetupWindow:
     def __init__(self):
+        self.config = load_or_create_config()
+        self.env = load_env()
+
         self.root = tk.Tk()
         self.root.title(
             "Social Media Analytics Setup",
@@ -28,7 +34,9 @@ class SetupWindow:
             False,
             False,
         )
+
         self.entries = {}
+
         self.create_widgets()
         self.adjust_window_height()
 
@@ -97,24 +105,25 @@ class SetupWindow:
             pady=5,
         )
 
-        text = ttk.Label(
+        label_widget = ttk.Label(
             frame,
             text=label,
             width=20,
         )
 
-        text.pack(
+        label_widget.pack(
             side="left",
         )
 
-        if link_url:
-            link = tk.Label(
-                frame,
-                text="Link",
-                fg="blue",
-                cursor="hand2",
-            )
+        link = tk.Label(
+            frame,
+            text="Link" if link_url else "",
+            fg="blue" if link_url else "black",
+            cursor="hand2" if link_url else "arrow",
+            width=6,
+        )
 
+        if link_url:
             link.bind(
                 "<Button-1>",
                 lambda event: self.open_url(
@@ -122,10 +131,10 @@ class SetupWindow:
                 ),
             )
 
-            link.pack(
-                side="left",
-                padx=5,
-            )
+        link.pack(
+            side="left",
+            padx=5,
+        )
 
         entry = ttk.Entry(
             frame,
@@ -145,6 +154,60 @@ class SetupWindow:
 
         self.entries[label] = entry
 
+    def create_combobox(
+        self,
+        parent,
+        label,
+        values,
+        default_value="",
+    ):
+        frame = ttk.Frame(parent)
+
+        frame.pack(
+            fill="x",
+            padx=20,
+            pady=5,
+        )
+
+        label_widget = ttk.Label(
+            frame,
+            text=label,
+            width=20,
+        )
+
+        label_widget.pack(
+            side="left",
+        )
+
+        link = tk.Label(
+            frame,
+            text="",
+            width=6,
+        )
+
+        link.pack(
+            side="left",
+            padx=5,
+        )
+
+        combobox = ttk.Combobox(
+            frame,
+            values=values,
+            state="readonly",
+        )
+
+        combobox.set(
+            default_value,
+        )
+
+        combobox.pack(
+            side="left",
+            fill="x",
+            expand=True,
+        )
+
+        self.entries[label] = combobox
+
     def create_widgets(self):
         title = ttk.Label(
             self.root,
@@ -155,65 +218,99 @@ class SetupWindow:
             pady=15,
         )
 
+        links = self.config.get(
+            "setup",
+            {},
+        ).get(
+            "links",
+            {},
+        )
+
         self.create_entry(
             self.root,
             "Instagram Account",
-            default_value="sanykorea",
+            default_value=self.config["instagram"]["accounts"][0],
         )
 
         self.create_entry(
             self.root,
             "YouTube Handle",
-            default_value="@SANYKorea_1989",
+            default_value=self.config["youtube"]["handles"][0],
         )
 
         self.create_entry(
             self.root,
             "APIFY API Token",
             secret=True,
-            link_url="https://console.apify.com/account/integrations",
+            default_value=self.env.get(
+                "APIFY_API_TOKEN",
+                "",
+            ),
+            link_url=links.get("apify"),
         )
 
         self.create_entry(
             self.root,
             "YouTube API Key",
             secret=True,
-            link_url="https://console.cloud.google.com/apis/credentials",
+            default_value=self.env.get(
+                "YOUTUBE_API_KEY",
+                "",
+            ),
+            link_url=links.get("youtube_api"),
         )
 
         self.create_entry(
             self.root,
             "SMTP User",
+            default_value=self.env.get(
+                "SMTP_USER",
+                "",
+            ),
         )
 
         self.create_entry(
             self.root,
             "SMTP Password",
             secret=True,
-            link_url="https://myaccount.google.com/apppasswords",
+            default_value=self.env.get(
+                "SMTP_PASSWORD",
+                "",
+            ),
+            link_url=links.get("smtp_password"),
         )
 
         self.create_entry(
             self.root,
             "Mail Recipients",
+            default_value=self.env.get(
+                "MAIL_RECIPIENTS",
+                "",
+            ),
         )
 
         self.create_entry(
             self.root,
             "SMTP Server",
-            default_value="smtp.gmail.com",
+            default_value=self.config["mail"]["smtp_server"],
         )
 
         self.create_entry(
             self.root,
             "SMTP Port",
-            default_value="587",
+            default_value=self.config["mail"]["smtp_port"],
         )
 
-        self.create_entry(
+        # self.create_entry(
+        #     self.root,
+        #     "Log Level",
+        #     default_value=self.config["logging"]["level"],
+        # )
+        self.create_combobox(
             self.root,
             "Log Level",
-            default_value="INFO",
+            LOG_LEVELS,
+            self.config["logging"]["level"],
         )
 
         button = ttk.Button(
@@ -236,67 +333,54 @@ class SetupWindow:
         try:
             ensure_app_directory()
 
-            env_values = {
-                "APIFY_API_TOKEN": self.get_value(
-                    "APIFY API Token",
-                ),
-                "YOUTUBE_API_KEY": self.get_value(
-                    "YouTube API Key",
-                ),
-                "SMTP_USER": self.get_value(
-                    "SMTP User",
-                ),
-                "SMTP_PASSWORD": self.get_value(
-                    "SMTP Password",
-                ),
-                "MAIL_RECIPIENTS": self.get_value(
-                    "Mail Recipients",
-                ),
-            }
-
             save_env(
-                env_values,
+                {
+                    "APIFY_API_TOKEN": self.get_value(
+                        "APIFY API Token",
+                    ),
+                    "YOUTUBE_API_KEY": self.get_value(
+                        "YouTube API Key",
+                    ),
+                    "SMTP_USER": self.get_value(
+                        "SMTP User",
+                    ),
+                    "SMTP_PASSWORD": self.get_value(
+                        "SMTP Password",
+                    ),
+                    "MAIL_RECIPIENTS": self.get_value(
+                        "Mail Recipients",
+                    ),
+                },
             )
 
-            config = {
-                "logging": {
-                    "level": self.get_value(
-                        "Log Level",
-                    ),
-                    "file": "logs/social_media_analytics.log",
-                },
-                "instagram": {
-                    "accounts": [
-                        self.get_value(
-                            "Instagram Account",
-                        ),
-                    ],
-                },
-                "youtube": {
-                    "handles": [
-                        self.get_value(
-                            "YouTube Handle",
-                        ),
-                    ],
-                },
-                "output": {
-                    "data_path": "data",
-                },
-                "mail": {
-                    "smtp_server": self.get_value(
-                        "SMTP Server",
-                    ),
-                    "smtp_port": int(
-                        self.get_value(
-                            "SMTP Port",
-                        ),
-                    ),
-                    "subject": "Social Media Analytics Report",
-                },
-            }
+            self.config["logging"]["level"] = self.get_value(
+                "Log Level",
+            )
+
+            self.config["instagram"]["accounts"] = [
+                self.get_value(
+                    "Instagram Account",
+                ),
+            ]
+
+            self.config["youtube"]["handles"] = [
+                self.get_value(
+                    "YouTube Handle",
+                ),
+            ]
+
+            self.config["mail"]["smtp_server"] = self.get_value(
+                "SMTP Server",
+            )
+
+            self.config["mail"]["smtp_port"] = int(
+                self.get_value(
+                    "SMTP Port",
+                ),
+            )
 
             save_config(
-                config,
+                self.config,
             )
 
             logger.info(
