@@ -1,26 +1,31 @@
 $taskName="Social Media Analytics"
 
-$action=New-ScheduledTaskAction `
--Execute "$env:USERPROFILE\Documents\Automation\social-media-analytics-automation\scripts\run_social_media_analytics.bat"
+$projectPath="$env:USERPROFILE\Documents\Automation\social-media-analytics-automation"
 
-$monthlyTrigger=New-ScheduledTaskTrigger `
+$action=New-ScheduledTaskAction `
+-Execute "$projectPath\scripts\run_social_media_analytics.bat"
+
+$trigger1=New-ScheduledTaskTrigger `
 -Monthly `
 -DaysOfMonth 1 `
 -At 09:00
 
-$startupTrigger=New-ScheduledTaskTrigger `
+$trigger2=New-ScheduledTaskTrigger `
 -AtLogOn
 
 $settings=New-ScheduledTaskSettingsSet `
 -StartWhenAvailable `
--MultipleInstances IgnoreNew
+-MultipleInstances IgnoreNew `
+-AllowStartIfOnBatteries `
+-DontStopIfGoingOnBatteries
 
 Register-ScheduledTask `
 -TaskName $taskName `
 -Action $action `
 -Trigger @(
-    $monthlyTrigger,
-    $startupTrigger
+    $trigger1,
+    $trigger2
 ) `
 -Settings $settings `
+-Description "Social Media Analytics Automation" `
 -Force

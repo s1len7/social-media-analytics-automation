@@ -9,7 +9,7 @@ import markdown
 from dotenv import load_dotenv
 from jinja2 import Template
 
-logger = logging.getLogger("social-media-analytics")
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 

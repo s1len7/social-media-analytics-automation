@@ -6,7 +6,7 @@ from googleapiclient.discovery import build
 
 load_dotenv()
 
-logger = logging.getLogger("social-media-analytics")
+logger = logging.getLogger(__name__)
 
 
 def get_youtube_client():
@@ -21,11 +21,7 @@ def resolve_channel_id(youtube, channel_handle):
     handle = channel_handle.replace("@", "")
     logger.info(f"YouTube channel lookup started: @{handle}")
 
-    response = (
-        youtube.channels()
-        .list(part="id,snippet,contentDetails", forHandle=handle)
-        .execute()
-    )
+    response = youtube.channels().list(part="id,snippet,contentDetails", forHandle=handle).execute()
 
     if not response.get("items"):
         raise ValueError(f"YouTube channel not found: @{handle}")
@@ -34,9 +30,7 @@ def resolve_channel_id(youtube, channel_handle):
     channel_id = channel["id"]
 
     elapsed = time.perf_counter() - start_time
-    logger.info(
-        f"YouTube channel resolved: @{handle} -> {channel_id}, time={elapsed:.2f}s"
-    )
+    logger.info(f"YouTube channel resolved: @{handle} -> {channel_id}, time={elapsed:.2f}s")
 
     return channel_id
 
@@ -48,13 +42,9 @@ def collect_youtube_videos(channel_handle):
 
     logger.info(f"YouTube collection started: {channel_id}")
 
-    channel_response = (
-        youtube.channels().list(part="contentDetails", id=channel_id).execute()
-    )
+    channel_response = youtube.channels().list(part="contentDetails", id=channel_id).execute()
 
-    uploads_playlist_id = channel_response["items"][0]["contentDetails"][
-        "relatedPlaylists"
-    ]["uploads"]
+    uploads_playlist_id = channel_response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
     video_ids = []
     next_page_token = None
@@ -116,15 +106,9 @@ def collect_youtube_videos(channel_handle):
                     "published_at": snippet.get("publishedAt"),
                     "category_id": snippet.get("categoryId"),
                     "tags": snippet.get("tags"),
-                    "thumbnail_default": snippet.get("thumbnails", {})
-                    .get("default", {})
-                    .get("url"),
-                    "thumbnail_medium": snippet.get("thumbnails", {})
-                    .get("medium", {})
-                    .get("url"),
-                    "thumbnail_high": snippet.get("thumbnails", {})
-                    .get("high", {})
-                    .get("url"),
+                    "thumbnail_default": snippet.get("thumbnails", {}).get("default", {}).get("url"),
+                    "thumbnail_medium": snippet.get("thumbnails", {}).get("medium", {}).get("url"),
+                    "thumbnail_high": snippet.get("thumbnails", {}).get("high", {}).get("url"),
                     "default_language": snippet.get("defaultLanguage"),
                     "default_audio_language": snippet.get("defaultAudioLanguage"),
                     "view_count": statistics.get("viewCount"),
@@ -159,8 +143,6 @@ def collect_youtube_videos(channel_handle):
     logger.info(f"YouTube video details collected: {detail_elapsed:.2f}s")
 
     elapsed = time.perf_counter() - start_time
-    logger.info(
-        f"YouTube collection completed: {channel_handle}, count={len(videos)}, time={elapsed:.2f}s"
-    )
+    logger.info(f"YouTube collection completed: {channel_handle}, count={len(videos)}, time={elapsed:.2f}s")
 
     return videos

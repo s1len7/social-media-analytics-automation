@@ -1,8 +1,8 @@
 import logging
 import time
-from social_media_analytics.clients.apify import run_apify_actor
+from social_media_analytics.collectors.clients.apify import run_apify_actor
 
-logger = logging.getLogger("social-media-analytics")
+logger = logging.getLogger(__name__)
 
 ACTOR_ID = "apify~instagram-scraper"
 
@@ -50,8 +50,6 @@ def collect_instagram_posts(account_name):
     total_elapsed = time.perf_counter() - start_time
 
     logger.info(f"Instagram processing completed: {process_elapsed:.4f}s")
-    logger.info(
-        f"Instagram collection completed: {account_name}, count={len(posts)}, time={total_elapsed:.2f}s"
-    )
+    logger.info(f"Instagram collection completed: {account_name}, count={len(posts)}, time={total_elapsed:.2f}s")
 
     return posts

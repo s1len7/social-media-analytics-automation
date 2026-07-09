@@ -78,9 +78,6 @@ def normalize_timestamp(df: pd.DataFrame) -> pd.DataFrame:
 
     platform_result = df.groupby("platform").size().to_dict()
 
-    logger.info(
-        f"Timestamp normalized: before={before_count}, "
-        f"after={after_count}, platform={platform_result}"
-    )
+    logger.info(f"Timestamp normalized: before={before_count}, " f"after={after_count}, platform={platform_result}")
 
     return df

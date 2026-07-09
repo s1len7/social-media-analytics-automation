@@ -1,13 +1,48 @@
+import os
+import re
 from pathlib import Path
+
 import yaml
-from dotenv import load_dotenv
 
-load_dotenv()
+from social_media_analytics.setup.config_io import get_config_path
+
+ENV_PATTERN = re.compile(r"\$\{([^}]+)\}")
 
 
-def load_config(config_path="config/config.yaml"):
-    path = Path(config_path)
-    if not path.exists():
+def replace_env_variables(value):
+    if isinstance(value, dict):
+        return {key: replace_env_variables(item) for key, item in value.items()}
+
+    if isinstance(value, list):
+        return [replace_env_variables(item) for item in value]
+
+    if isinstance(value, str):
+        matches = ENV_PATTERN.findall(value)
+
+        for key in matches:
+            env_value = os.getenv(
+                key,
+                "",
+            )
+
+            value = value.replace(
+                f"${{{key}}}",
+                env_value,
+            )
+
+    return value
+
+
+def load_config():
+    config_path = Path(get_config_path())
+
+    if not config_path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
-    with path.open("r", encoding="utf-8") as file:
-        return yaml.safe_load(file)
+
+    config = yaml.safe_load(
+        config_path.read_text(
+            encoding="utf-8",
+        )
+    )
+
+    return replace_env_variables(config)

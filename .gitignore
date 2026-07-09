@@ -216,8 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
-data/raw/
-data/processed/
+
+data/
+# data/raw/
+# data/processed/
 # data/raw/instagram_posts.csv
 # data/processed/instagram_posts.csv
 # data/raw/instagram_raw.json

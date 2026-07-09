@@ -4,7 +4,7 @@ import threading
 import requests
 import logging
 
-logger = logging.getLogger("social-media-analytics")
+logger = logging.getLogger(__name__)
 
 
 def heartbeat(stop_event, interval=10):
@@ -21,17 +21,13 @@ def run_apify_actor(actor_id, payload):
     logger.info(f"Apify request started: {actor_id}")
 
     stop_event = threading.Event()
-    heartbeat_thread = threading.Thread(
-        target=heartbeat, args=(stop_event,), daemon=True
-    )
+    heartbeat_thread = threading.Thread(target=heartbeat, args=(stop_event,), daemon=True)
     heartbeat_thread.start()
 
     start_time = time.perf_counter()
 
     try:
-        response = requests.post(
-            url, params={"token": token}, json=payload, timeout=300
-        )
+        response = requests.post(url, params={"token": token}, json=payload, timeout=300)
     finally:
         stop_event.set()
 

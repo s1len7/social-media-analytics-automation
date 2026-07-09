@@ -23,9 +23,7 @@ def yearly_count(dataframe: pd.DataFrame) -> pd.DataFrame:
 def monthly_count(dataframe: pd.DataFrame) -> pd.DataFrame:
     dataframe = dataframe.copy()
 
-    dataframe["month"] = (
-        dataframe["timestamp"].dt.tz_localize(None).dt.to_period("M").astype(str)
-    )
+    dataframe["month"] = dataframe["timestamp"].dt.tz_localize(None).dt.to_period("M").astype(str)
 
     result = (
         dataframe.groupby(
@@ -45,11 +43,7 @@ def weekly_count(dataframe: pd.DataFrame) -> pd.DataFrame:
 
     iso_calendar = dataframe["timestamp"].dt.tz_localize(None).dt.isocalendar()
 
-    dataframe["week"] = (
-        iso_calendar["year"].astype(str)
-        + "_WW"
-        + iso_calendar["week"].astype(str).str.zfill(2)
-    )
+    dataframe["week"] = iso_calendar["year"].astype(str) + "_WW" + iso_calendar["week"].astype(str).str.zfill(2)
 
     result = (
         dataframe.groupby(
